@@ -1,0 +1,1 @@
+# end-to-end-CNN-with-attentional-mechanism-to-raw-EEG-in-BCI-classification
