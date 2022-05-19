@@ -3,18 +3,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Net(nn.Module):
-    def __init__(self, input_size = (64, 250)):
-        super(Net, self).__init__()
+class AttentionNet(nn.Module):
+    def __init__(self, input_size = (64, 250), activate_func = nn.ELU(), dropout = 0.5, kernel_size = 50, dense_size = 91, filter_number = 32):
+        super(AttentionNet, self).__init__()
 
         # hyper parameters
         self.C = input_size[0] # Channel number
-        self.K = 50 # kernel size  
-        self.F = 16 # number of filters
+        self.K = kernel_size # kernel size  
+        self.F = filter_number # number of filters
 
         # activation function and dropout
-        self.activate = nn.ELU()
-        self.dropout = nn.Dropout(p = 0.5)
+        self.activate = activate_func
+        self.dropout = nn.Dropout(p = dropout)
 
         # output feature size 
         self.F0 = input_size[1]
@@ -90,4 +90,6 @@ class Net(nn.Module):
         x = self.FC2(x)
 
         return x
+
+
 
