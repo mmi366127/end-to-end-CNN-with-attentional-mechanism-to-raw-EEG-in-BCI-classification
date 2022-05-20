@@ -15,11 +15,14 @@ class AttentionNet(nn.Module):
         # activation function and dropout
         self.activate = activate_func
         self.dropout = nn.Dropout(p = dropout)
-
+        
+        # Conv kernel stride
+        self.stride = 3
+        
         # output feature size 
         self.F0 = input_size[1]
-        self.F1 = int((self.F0 - self.K) / 1 + 1) 
-        self.F2 = int((self.F1 - self.K) / 1 + 1) 
+        self.F1 = int((self.F0 - self.K) / self.stride + 1) 
+        self.F2 = int((self.F1 - self.K) / self.stride + 1) 
         self.F3 = int(self.F2 - 3)
         self.F4 = int(self.F * self.F3)
 
@@ -27,12 +30,12 @@ class AttentionNet(nn.Module):
         self.F5 = dense_size
     
         self.conv1 = nn.Sequential(
-            nn.Conv1d(in_channels = 1, out_channels = self.F, kernel_size = self.K, stride = 1),
+            nn.Conv1d(in_channels = 1, out_channels = self.F, kernel_size = self.K, stride = self.stride),
             nn.BatchNorm1d(self.F),
             self.activate()
         )
         self.conv2 = nn.Sequential(
-            nn.Conv1d(in_channels = self.F, out_channels = self.F, kernel_size = self.K, stride = 1),
+            nn.Conv1d(in_channels = self.F, out_channels = self.F, kernel_size = self.K, stride = self.stride),
             nn.BatchNorm1d(self.F),
             self.activate()
         )
