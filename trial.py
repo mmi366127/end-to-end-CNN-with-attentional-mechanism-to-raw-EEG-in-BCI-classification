@@ -18,7 +18,7 @@ from tqdm import tqdm
 from utils import *
 import argparse
 
-
+# test function
 def test(model, device, test_dataset, loss_func):
     # switch to eval
     model.eval()
@@ -38,10 +38,57 @@ def test(model, device, test_dataset, loss_func):
     return loss_total / len(test_dataset), correct / len(test_dataset)
 
 
-def train(model, device, train_data, loss_func):
-    pass
+# training function
+def train(model, device, loss_func, optimizer, max_epoch, train_loader, test_dataset):
+    
+    loss_log = np.zeros((2, max_epoch))
+    accuracy_log = np.zeros((2, max_epoch))
+    
+    model.to(device)
+    for epoch in range(max_epoch):
+        batch_count = 0
+        epoch_loss = 0.0
+        epoch_accuracy = 0.0
+        with tqdm(train_loader, unit = 'batch') as tepoch:
+            for data, target in tepoch:
+                
+                batch_count += 1.0
+                tepoch.set_description(f'Training Epoch {epoch+1:02d}/{max_epoch:02d}')
 
+                model.train()
 
+                data = data.to(device, dtype = torch.float)
+                target = target.to(device)
+
+                optimizer.zero_grad()
+                pred = model(data)
+
+                loss = loss_func(pred, target)
+                loss.backward()
+                optimizer.step()
+
+                correct = (torch.argmax(pred, dim = 1).squeeze() == target).sum().item()
+                
+                epoch_loss += loss.item() / len(data)
+                epoch_accuracy += correct / len(data)
+
+                tepoch.set_postfix(loss = loss.item() / len(data), accuracy = 100 * correct / len(data))
+
+        epoch_loss /= batch_count
+        epoch_accuracy /= batch_count
+
+        current_loss, current_accuracy = test(model, device, test_dataset, loss_func)
+        print('current loss: {}, current accuracy: {}'.format(current_loss, current_accuracy))
+
+        loss_log[0][epoch] = epoch_loss
+        loss_log[1][epoch] = current_loss
+
+        accuracy_log[0][epoch] = epoch_accuracy
+        accuracy_log[1][epoch] = current_accuracy
+
+    return model, loss_log, accuracy_log
+
+        
 # Tunning the model with sherpa
 def tunning(model_type, train_dataset, test_dataset):
     max_epochs = 300
