@@ -1,7 +1,6 @@
 
 
 # Dataset 
-from pickletools import optimize
 from dataset.matDataset import ID_dataset, SI_dataset, SD_dataset
 from torch.utils.data import DataLoader
 
@@ -39,9 +38,13 @@ def test(model, device, test_dataset, loss_func):
     return loss_total / len(test_dataset), correct / len(test_dataset)
 
 
+def train(model, device, train_data, loss_func):
+    pass
+
+
 # Tunning the model with sherpa
 def tunning(model_type, train_dataset, test_dataset):
-    max_epochs = 200
+    max_epochs = 300
     # If gpu is available
     if torch.cuda.is_available():  
         device = torch.device('cuda')
@@ -51,7 +54,7 @@ def tunning(model_type, train_dataset, test_dataset):
     parameters = [
         sherpa.Choice('activation', [nn.ELU, nn.ReLU]),
         sherpa.Continuous('dropout', [0, 0.9]),
-        sherpa.Choice('kernel_size', [10, 15, 25, 40]),
+        sherpa.Choice('kernel_size', [10, 15, 25]),
         sherpa.Continuous('learning_rate', [0.0001, 0.1]),
         # sherpa.Continuous('learning_rate_decay', [0.5, 1.0]),
         sherpa.Discrete('dense_size', [8, 512]),
@@ -60,9 +63,7 @@ def tunning(model_type, train_dataset, test_dataset):
         sherpa.Discrete('batch_size', [16, 512])
     ]
 
-    algorithm = Genetic(max_num_trials = 250)
-
-    train_loader = DataLoader(train_dataset, batch_size = 32)
+    algorithm = Genetic(max_num_trials = 100)
 
     loss_func = nn.CrossEntropyLoss()
 
@@ -76,6 +77,10 @@ def tunning(model_type, train_dataset, test_dataset):
     
     for trial in study:
         print('Trial {}:\t{}'.format(trial.id, trial.parameters))
+        train_loader = DataLoader(
+            train_dataset, 
+            batch_size = trial.parameters['batch_size']
+        )
         model = AttentionNet(
             input_size = (22, 562),
             activate_func = trial.parameters['activation'],
@@ -93,7 +98,7 @@ def tunning(model_type, train_dataset, test_dataset):
         for epoch in range(max_epochs):
             with tqdm(train_loader, unit = 'batch') as tepoch:
                 for inputs, labels in tepoch:
-                    tepoch.set_description(f'Training Epoch {epoch+1:03d}/{epoch:03d}')
+                    tepoch.set_description(f'Training Epoch {epoch+1:03d}/{max_epochs:03d}')
                 
                     # set model to train
                     model.train()

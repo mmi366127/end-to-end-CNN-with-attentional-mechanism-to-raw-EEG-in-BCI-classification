@@ -7,7 +7,20 @@ import os
 
 datasetPath = './dataset/BCICIV_2a_mat'
 
-def readDateset(subjects = ['S01'], dataset = 'train'): 
+
+# DA using sliding window
+def slidingWindow(data, label):
+    data_ = []
+    label_ = []
+    for i in range(0, 562 - 125, 12):
+        data_.append(data[:, :, i:i + 125])
+        label_.append(label)
+    data = np.concatenate(data_)
+    label = np.concatenate(label_)
+
+    return data, label
+
+def readDateset(subjects = ['S01'], dataset = 'train', DA = False): 
 
     if dataset == 'train':
         # read train dataset
@@ -22,6 +35,7 @@ def readDateset(subjects = ['S01'], dataset = 'train'):
         y_train = np.concatenate(
             [data['y_train'] for data in train_dataset]
         )
+        if DA : return slidingWindow(x_train, y_train)
         return x_train, y_train
 
     elif dataset == 'test':
@@ -37,6 +51,7 @@ def readDateset(subjects = ['S01'], dataset = 'train'):
         y_test = np.concatenate(
             [data['y_test'] for data in test_dataset]
         )
+        if DA : return slidingWindow(x_test, y_test)
         return x_test, y_test
 
     elif dataset == 'both':
@@ -47,14 +62,16 @@ def readDateset(subjects = ['S01'], dataset = 'train'):
         data = np.concatenate((x_train, x_test))
         label = np.concatenate((y_train, y_test))
 
+        if DA : return slidingWindow(data, label)
         return data, label
 
     return
 
 
+
 class BCI_Dataset(Dataset):
-    def __init__(self, test_subjects = ['S01'], dataset = 'train'):
-        self.data, self.label = readDateset(test_subjects, dataset)
+    def __init__(self, test_subjects = ['S01'], dataset = 'train', DA = False):
+        self.data, self.label = readDateset(test_subjects, dataset, DA)
         self.data = torch.tensor(self.data).unsqueeze(1).float()
         self.label = torch.tensor(self.label).squeeze()
 
@@ -67,32 +84,32 @@ class BCI_Dataset(Dataset):
 
 # Dataset for individual subject training scheme
 class ID_dataset(BCI_Dataset):
-    def __init__(self, test_subject = 'S01', train = True):
+    def __init__(self, test_subject = 'S01', train = True, DA = False):
         if train:
-            super().__init__([test_subject], 'train')
+            super().__init__([test_subject], 'train', DA)
         else:
-            super().__init__([test_subject], 'test')
+            super().__init__([test_subject], 'test', DA)
 
 
 
 # Dataset for subeject independent training scheme
 class SI_dataset(BCI_Dataset):
-    def __init__(self, test_subject = 'S01', train = True):
+    def __init__(self, test_subject = 'S01', train = True, DA = False):
         subjects = []
         if train:
             for _ in range(1, 10):
                 subject = 'S0' + str(_)
                 if subject != test_subject :
                     subjects.append(subject)
-            super().__init__(subjects, 'both')
+            super().__init__(subjects, 'both', DA)
         else:
-            super().__init__([test_subject], 'test')
+            super().__init__([test_subject], 'test', DA)
     
 
 
 # Dataset for subject dependent training scheme
 class SD_dataset(BCI_Dataset):
-    def __init__(self, test_subject = 'S01', train = True):
+    def __init__(self, test_subject = 'S01', train = True, DA = False):
         if train:
             subjects = []
             subjects_without_test = []
@@ -102,8 +119,8 @@ class SD_dataset(BCI_Dataset):
                 if subject == test_subject: continue
                 subjects_without_test.append(subject)
             
-            data_all = readDateset(subjects, 'train')
-            data_without = readDateset(subjects_without_test, 'test')
+            data_all = readDateset(subjects, 'train', DA)
+            data_without = readDateset(subjects_without_test, 'test', DA)
             
             self.data = np.concatenate((data_all[0], data_without[0]))
             self.label = np.concatenate((data_all[1], data_without[1]))
@@ -112,4 +129,8 @@ class SD_dataset(BCI_Dataset):
             self.label = torch.tensor(self.label).squeeze()
 
         else:
-            super().__init__([test_subject], 'test')
+            super().__init__([test_subject], 'test', DA)
+
+
+
+

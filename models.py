@@ -18,21 +18,21 @@ class AttentionNet(nn.Module):
 
         # output feature size 
         self.F0 = input_size[1]
-        self.F1 = int((self.F0 - self.K) / 3 + 1) 
-        self.F2 = int((self.F1 - self.K) / 3 + 1) 
+        self.F1 = int((self.F0 - self.K) / 1 + 1) 
+        self.F2 = int((self.F1 - self.K) / 1 + 1) 
         self.F3 = int(self.F2 - 3)
         self.F4 = int(self.F * self.F3)
 
         # hidden layer parameter
-        self.F5 = 512
+        self.F5 = dense_size
     
         self.conv1 = nn.Sequential(
-            nn.Conv1d(in_channels = 1, out_channels = self.F, kernel_size = self.K, stride = 3),
+            nn.Conv1d(in_channels = 1, out_channels = self.F, kernel_size = self.K, stride = 1),
             nn.BatchNorm1d(self.F),
             self.activate()
         )
         self.conv2 = nn.Sequential(
-            nn.Conv1d(in_channels = self.F, out_channels = self.F, kernel_size = self.K, stride = 3),
+            nn.Conv1d(in_channels = self.F, out_channels = self.F, kernel_size = self.K, stride = 1),
             nn.BatchNorm1d(self.F),
             self.activate()
         )
