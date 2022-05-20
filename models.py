@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class AttentionNet(nn.Module):
-    def __init__(self, input_size = (64, 250), activate_func = nn.ELU(), dropout = 0.5, kernel_size = 50, dense_size = 91, filter_number = 32):
+    def __init__(self, input_size = (64, 250), activate_func = nn.ELU, dropout = 0.5, kernel_size = 50, dense_size = 91, filter_number = 32):
         super(AttentionNet, self).__init__()
 
         # hyper parameters
@@ -29,12 +29,12 @@ class AttentionNet(nn.Module):
         self.conv1 = nn.Sequential(
             nn.Conv1d(in_channels = 1, out_channels = self.F, kernel_size = self.K, stride = 3),
             nn.BatchNorm1d(self.F),
-            self.activate
+            self.activate()
         )
         self.conv2 = nn.Sequential(
             nn.Conv1d(in_channels = self.F, out_channels = self.F, kernel_size = self.K, stride = 3),
             nn.BatchNorm1d(self.F),
-            self.activate
+            self.activate()
         )
         self.maxpool1 = nn.Sequential(
             nn.MaxPool1d(kernel_size = 4, stride = 1),
@@ -52,7 +52,7 @@ class AttentionNet(nn.Module):
         # hiddden layer of NN
         self.FC1 = nn.Sequential(
             nn.Linear(self.C * self.C, self.F5),
-            self.activate
+            self.activate()
         )
         self.FC2 = nn.Linear(self.F5, 4) 
 
