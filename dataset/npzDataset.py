@@ -1,73 +1,121 @@
 
 from torch.utils.data import Dataset
-import torch, scipy.io
 import numpy as np
+import torch
 import os
 
+datasetPath = './dataset/BCICIV_2a'
 
-datasetPath = './dataset/BCICIV_2a_mat'
-
-
-# DA using sliding window, sample rate = 250 Hz, 562 samples(4.5s)
+# DA using sliding window, sample rate = 250 Hz, 750 samples(3s)
 def slidingWindow(data, label):
     data_ = []
     label_ = []
-    for i in range(0, 562 - 125, 12):
-        data_.append(data[:, :, i:i + 125])
+    for i in range(0, 500, 25):
+        data_.append(data[:, :, i:i + 250])
         label_.append(label)
     data = np.concatenate(data_)
     label = np.concatenate(label_)
 
     return data, label
 
-def readDataset(subjects = ['01'], dataset = 'train', DA = False): 
+def readDataset(subjects = ['01'], dataset = 'train', DA = False):
+
+    # Types of motor imagery
+    #           left    roght   foot    tongue
+    MI_types = {769: 0, 770: 1, 771: 2, 772: 3}
 
     if dataset == 'train':
-        # read train dataset
-        train_dataset = []
+        
+        x_train, y_train = [], []
         for subject in subjects:
-            filename = os.path.join(datasetPath, 'BCIC_S' + subject + '_T.mat')
-            train_dataset.append(scipy.io.loadmat(filename))
+            filename = os.path.join(datasetPath, 'A' + subject + 'T.npz')
+            data = np.load(filename)
+            
+            startrial_code = 768
+            
+            raw = data['s'].T
+            events_type = data['etyp'].T
+            events_position = data['epos'].T
 
-        x_train = np.concatenate(
-            [data['x_train'] for data in train_dataset]
-        )
-        y_train = np.concatenate(
-            [data['y_train'] for data in train_dataset]
-        )
+            startrial_events = events_type == startrial_code
+            indices = [i for i, x in enumerate(startrial_events[0]) if x]
+
+            trials = []
+            classes = []
+            for index in indices:
+                try:
+                    type_e = events_type[0, index+1]
+                    class_e = MI_types[type_e]
+                    classes.append(class_e)
+
+                    # crop the motor imagery part
+                    start = events_position[0, index]
+                    trial = raw[: 22, start + 750: start + 1500] 
+                    trials.append(trial)
+
+                except:
+                    continue
+
+            x_train.append(np.array(trials))
+            y_train.append(np.array(classes))
+
+        x_train = np.concatenate(x_train)
+        y_train = np.concatenate(y_train)
+
         if DA : return slidingWindow(x_train, y_train)
         return x_train, y_train
-
+            
     elif dataset == 'test':
-        # read test dataset
-        test_dataset = []
+        
+        x_test, y_test = [], []
         for subject in subjects:
-            filename = os.path.join(datasetPath, 'BCIC_S' + subject + '_E.mat')
-            test_dataset.append(scipy.io.loadmat(filename))
+            filename = os.path.join(datasetPath, 'A' + subject + 'E.npz')
+            data = np.load(filename)
+            
+            startrial_code = 768
+            
+            raw = data['s'].T
+            events_type = data['etyp'].T
+            events_position = data['epos'].T
 
-        x_test = np.concatenate(
-            [data['x_test'] for data in test_dataset]
-        )
-        y_test = np.concatenate(
-            [data['y_test'] for data in test_dataset]
-        )
+            startrial_events = events_type == startrial_code
+            indices = [i for i, x in enumerate(startrial_events[0]) if x]
+
+            trials = []
+            classes = []
+            for index in indices:
+                try:
+                    type_e = events_type[0, index+1]
+                    class_e = MI_types[type_e]
+                    classes.append(class_e)
+
+                    # crop the motor imagery part
+                    start = events_position[0, index]
+                    trial = raw[: 22, start + 750: start + 1500] 
+                    trials.append(trial)
+
+                except:
+                    continue
+
+            x_test.append(np.array(trials))
+            y_test.append(np.array(classes))
+
+        x_test = np.concatenate(x_test)
+        x_test = np.concatenate(y_test)
+
         if DA : return slidingWindow(x_test, y_test)
         return x_test, y_test
 
     elif dataset == 'both':
-        
-        x_train, y_train = readDataset(subjects, 'train', DA)
-        x_test, y_test = readDataset(subjects, 'test', DA)
+
+        x_train, y_train = readDataset(subjects, 'train')
+        x_test, y_test = readDataset(subjects, 'test')
 
         data = np.concatenate((x_train, x_test))
         label = np.concatenate((y_train, y_test))
 
         if DA : return slidingWindow(data, label)
         return data, label
-
-    return
-
-
 
 class BCI_Dataset(Dataset):
     def __init__(self, test_subjects = ['01'], dataset = 'train', DA = False):
@@ -80,7 +128,6 @@ class BCI_Dataset(Dataset):
     
     def __len__(self):
         return len(self.data)
-
 
 
 # Dataset for individual subject training scheme
@@ -105,7 +152,7 @@ class SI_dataset(BCI_Dataset):
             super().__init__(subjects, 'both', DA)
         else:
             super().__init__([test_subject], 'test', DA)
-    
+
 
 
 # Dataset for subject dependent training scheme

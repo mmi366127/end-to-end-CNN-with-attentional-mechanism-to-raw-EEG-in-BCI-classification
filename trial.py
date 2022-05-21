@@ -1,7 +1,8 @@
 
 
 # Dataset 
-from dataset.matDataset import ID_dataset, SI_dataset, SD_dataset
+# from dataset.matDataset import ID_dataset, SI_dataset, SD_dataset
+from dataset.npzDataset import BCI_Dataset, MotorImageryDataset
 from torch.utils.data import DataLoader
 
 # Learning 
@@ -74,7 +75,7 @@ def train(model, device, loss_func, optimizer, max_epoch, train_loader, test_dat
 
                 tepoch.set_postfix(loss = loss.item() / len(data), accuracy = 100 * correct / len(data))
 
-        epoch_loss /= batch_count
+        # epoch_loss /= batch_count
         epoch_accuracy /= batch_count
 
         current_loss, current_accuracy = test(model, device, test_dataset, loss_func)
@@ -187,8 +188,10 @@ if __name__ == '__main__':
     # parser.add_argument('--model', )
     # parser.add_argument('--scheme', )
     # parser.add_argument()
-    train_dataset = SI_dataset()
-    test_dataset = SI_dataset(train = False)
-    tunning('A', train_dataset, test_dataset)
+    train_dataset = BCI_Dataset()
+    print(train_dataset.data.size())
+    print(train_dataset.label.size())
+    # test_dataset = SI_dataset(train = False)
+    # tunning('A', train_dataset, test_dataset)
 
     

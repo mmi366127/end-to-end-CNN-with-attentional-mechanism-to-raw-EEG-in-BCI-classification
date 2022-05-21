@@ -1,7 +1,10 @@
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+def print_func(x):
+    if __name__ == '__main__' : print(x.size())
 
 class AttentionNet(nn.Module):
     def __init__(self, input_size = (64, 250), activate_func = nn.ELU, dropout = 0.5, kernel_size = 50, dense_size = 91, filter_number = 32):
@@ -14,7 +17,8 @@ class AttentionNet(nn.Module):
 
         # activation function and dropout
         self.activate = activate_func
-        self.dropout = nn.Dropout(p = dropout)
+        self.dropout_attn = nn.Dropout(p = dropout)
+        self.dropout_hidd = nn.Dropout(p = dropout)
         
         # Conv kernel stride
         self.stride = 3
@@ -45,11 +49,11 @@ class AttentionNet(nn.Module):
         )
 
         # self attentation 
-        self.Q = nn.Linear(self.F4, self.C)
-        self.K = nn.Linear(self.F4, self.C)
-        self.V = nn.Linear(self.F4, self.C)
+        self.Q = nn.Linear(self.F4, self.C, bias = False)
+        self.K = nn.Linear(self.F4, self.C, bias = False)
+        self.V = nn.Linear(self.F4, self.C, bias = False)
         self.softmax = nn.Softmax(dim = -1)
-
+        self.flatten = nn.Flatten()
 
         self.tanh = nn.Tanh()
         # hiddden layer of NN
@@ -65,31 +69,42 @@ class AttentionNet(nn.Module):
         if len(x.shape) == 2 :
             x = x.unsqueeze(0)
         batchsize = x.size()[0]
-
+        
         # conv 1
         x = x.reshape((batchsize * self.C, 1, self.F0))
         x = self.conv1(x)
+        print_func(x)
         
         # conv 2
         x = self.conv2(x)
+        print_func(x)
         
         # maxpool 1
         x = self.maxpool1(x)
+        print_func(x)
         x = x.reshape((batchsize, self.C, self.F4))
-    
+        print_func(x)
+
         # self attentation     
         q = self.Q(x)
         k = self.K(x)
         v = self.V(x)
 
-        w = self.softmax(torch.bmm(q, k.permute(0, 2, 1)))
+        w = torch.bmm(q, k.permute(0, 2, 1))
+        w = self.softmax(w)
+        w = self.dropout_attn(w)
         m = torch.bmm(w, v)
         
-        x = self.tanh(torch.bmm(m, w.permute(0, 2, 1)))
-        x = nn.Flatten()(x)
+        # m = self.tanh(torch.bmm(m, w.permute(0, 2, 1)))
+        # m = self.tanh(torch.bmm(m, x))
+        print_func(m)
+        x = self.flatten(m)
+        print_func(x)
+        # x = torch.cat((x.reshape(batchsize, -1), m), dim = -1)
         
         # hidden FC layers
         x = self.FC1(x)
+        x = self.dropout_hidd(x)
         x = self.FC2(x)
 
         return x
@@ -284,3 +299,10 @@ class TSception(nn.Module):
 
 
 
+if __name__ == '__main__':
+
+    Net = AttentionNet(filter_number = 16)
+
+    x = torch.randn(20, 64, 250)
+
+    Net.forward(x)
