@@ -4,7 +4,9 @@ import numpy as np
 import torch
 import os
 
+
 datasetPath = './dataset/BCICIV_2a'
+
 
 # DA using sliding window, sample rate = 250 Hz, 750 samples(3s)
 def slidingWindow(data, label):
@@ -17,6 +19,8 @@ def slidingWindow(data, label):
     label = np.concatenate(label_)
 
     return data, label
+
+
 
 def readDataset(subjects = ['01'], dataset = 'train', DA = False):
 
@@ -37,7 +41,7 @@ def readDataset(subjects = ['01'], dataset = 'train', DA = False):
             events_type = data['etyp'].T
             events_position = data['epos'].T
 
-            startrial_events = events_type == startrial_code
+            startrial_events = (events_type == startrial_code)
             indices = [i for i, x in enumerate(startrial_events[0]) if x]
 
             trials = []
@@ -58,15 +62,17 @@ def readDataset(subjects = ['01'], dataset = 'train', DA = False):
 
             x_train.append(np.array(trials))
             y_train.append(np.array(classes))
+            
 
         x_train = np.concatenate(x_train)
         y_train = np.concatenate(y_train)
-
+        print(x_train.shape, y_train.shape)
         if DA : return slidingWindow(x_train, y_train)
         return x_train, y_train
             
     elif dataset == 'test':
-        
+        # All unknown data 
+        return
         x_test, y_test = [], []
         for subject in subjects:
             filename = os.path.join(datasetPath, 'A' + subject + 'E.npz')
@@ -78,7 +84,7 @@ def readDataset(subjects = ['01'], dataset = 'train', DA = False):
             events_type = data['etyp'].T
             events_position = data['epos'].T
 
-            startrial_events = events_type == startrial_code
+            startrial_events = (events_type == startrial_code)
             indices = [i for i, x in enumerate(startrial_events[0]) if x]
 
             trials = []
@@ -93,7 +99,7 @@ def readDataset(subjects = ['01'], dataset = 'train', DA = False):
                     start = events_position[0, index]
                     trial = raw[: 22, start + 750: start + 1500] 
                     trials.append(trial)
-
+                    
                 except:
                     continue
 
@@ -101,27 +107,29 @@ def readDataset(subjects = ['01'], dataset = 'train', DA = False):
             y_test.append(np.array(classes))
 
         x_test = np.concatenate(x_test)
-        x_test = np.concatenate(y_test)
-
+        y_test = np.concatenate(y_test)
+        
         if DA : return slidingWindow(x_test, y_test)
         return x_test, y_test
 
     elif dataset == 'both':
-
+        return 
         x_train, y_train = readDataset(subjects, 'train')
         x_test, y_test = readDataset(subjects, 'test')
-
+        
         data = np.concatenate((x_train, x_test))
         label = np.concatenate((y_train, y_test))
 
         if DA : return slidingWindow(data, label)
         return data, label
 
+
+
 class BCI_Dataset(Dataset):
     def __init__(self, test_subjects = ['01'], dataset = 'train', DA = False):
         self.data, self.label = readDataset(test_subjects, dataset, DA)
         self.data = torch.tensor(self.data).unsqueeze(1).float()
-        self.label = torch.tensor(self.label).squeeze()
+        self.label = torch.tensor(self.label).squeeze().long()
 
     def __getitem__(self, index):
         return self.data[index], self.label[index]
@@ -130,13 +138,14 @@ class BCI_Dataset(Dataset):
         return len(self.data)
 
 
+
 # Dataset for individual subject training scheme
-class ID_dataset(BCI_Dataset):
-    def __init__(self, test_subject = '01', train = True, DA = False):
-        if train:
-            super().__init__([test_subject], 'train', DA)
-        else:
-            super().__init__([test_subject], 'test', DA)
+# class ID_dataset(BCI_Dataset):
+#     def __init__(self, test_subject = '01', train = True, DA = False):
+#         if train:
+#             super().__init__([test_subject], 'train', DA)
+#         else:
+#             super().__init__([test_subject], 'test', DA)
 
 
 
@@ -149,35 +158,35 @@ class SI_dataset(BCI_Dataset):
                 subject = '0' + str(_)
                 if subject != test_subject :
                     subjects.append(subject)
-            super().__init__(subjects, 'both', DA)
+            super().__init__(subjects, 'train', DA)
         else:
-            super().__init__([test_subject], 'test', DA)
+            super().__init__([test_subject], 'train', DA)
 
 
 
 # Dataset for subject dependent training scheme
-class SD_dataset(BCI_Dataset):
-    def __init__(self, test_subject = '01', train = True, DA = False):
-        if train:
-            subjects = []
-            subjects_without_test = []
-            for _ in range(1, 10):
-                subject = '0' + str(_)
-                subjects.append(subject)
-                if subject == test_subject: continue
-                subjects_without_test.append(subject)
+# class SD_dataset(BCI_Dataset):
+#     def __init__(self, test_subject = '01', train = True, DA = False):
+#         if train:
+#             subjects = []
+#             subjects_without_test = []
+#             for _ in range(1, 10):
+#                 subject = '0' + str(_)
+#                 subjects.append(subject)
+#                 if subject == test_subject: continue
+#                 subjects_without_test.append(subject)
             
-            data_all = readDataset(subjects, 'train', DA)
-            data_without = readDataset(subjects_without_test, 'test', DA)
+#             data_all = readDataset(subjects, 'train', DA)
+#             data_without = readDataset(subjects_without_test, 'test', DA)
             
-            self.data = np.concatenate((data_all[0], data_without[0]))
-            self.label = np.concatenate((data_all[1], data_without[1]))
+#             self.data = np.concatenate((data_all[0], data_without[0]))
+#             self.label = np.concatenate((data_all[1], data_without[1]))
 
-            self.data = torch.tensor(self.data).unsqueeze(1).float()
-            self.label = torch.tensor(self.label).squeeze()
+#             self.data = torch.tensor(self.data).unsqueeze(1).float()
+#             self.label = torch.tensor(self.label).squeeze()
 
-        else:
-            super().__init__([test_subject], 'test', DA)
+#         else:
+#             super().__init__([test_subject], 'test', DA)
 
 
 

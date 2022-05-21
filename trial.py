@@ -2,7 +2,7 @@
 
 # Dataset 
 # from dataset.matDataset import ID_dataset, SI_dataset, SD_dataset
-from dataset.npzDataset import BCI_Dataset, MotorImageryDataset
+from dataset.npzDataset import BCI_Dataset
 from torch.utils.data import DataLoader
 
 # Learning 

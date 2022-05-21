@@ -20,6 +20,8 @@ def slidingWindow(data, label):
 
     return data, label
 
+
+
 def readDataset(subjects = ['01'], dataset = 'train', DA = False): 
 
     if dataset == 'train':
