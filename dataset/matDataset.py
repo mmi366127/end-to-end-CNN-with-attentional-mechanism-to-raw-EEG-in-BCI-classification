@@ -64,7 +64,6 @@ def readDataset(subjects = ['01'], dataset = 'train', DA = False):
         data = np.concatenate((x_train, x_test))
         label = np.concatenate((y_train, y_test))
 
-        if DA : return slidingWindow(data, label)
         return data, label
 
     return

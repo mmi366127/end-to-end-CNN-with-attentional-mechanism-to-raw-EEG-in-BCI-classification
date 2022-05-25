@@ -1,8 +1,8 @@
 
 
 # Dataset 
-# from dataset.matDataset import ID_dataset, SI_dataset, SD_dataset
-from dataset.npzDataset import BCI_Dataset
+from dataset.matDataset import ID_dataset, SI_dataset, SD_dataset
+# from dataset.npzDataset import BCI_Dataset
 from torch.utils.data import DataLoader
 
 # Learning 
@@ -92,7 +92,7 @@ def train(model, device, loss_func, optimizer, max_epoch, train_loader, test_dat
         
 # Tunning the model with sherpa
 def tunning(model_type, train_dataset, test_dataset):
-    max_epochs = 300
+    max_epochs = 150
     # If gpu is available
     if torch.cuda.is_available():  
         device = torch.device('cuda')
@@ -130,7 +130,7 @@ def tunning(model_type, train_dataset, test_dataset):
             batch_size = trial.parameters['batch_size']
         )
         model = AttentionNet(
-            input_size = (22, 562),
+            input_size = (22, 125),
             activate_func = trial.parameters['activation'],
             dropout = trial.parameters['dropout'],
             kernel_size = trial.parameters['kernel_size'],
@@ -181,17 +181,23 @@ def tunning(model_type, train_dataset, test_dataset):
 
 
 if __name__ == '__main__':
-
-    # parser = argparse.ArgumentParser(description = 'test')
-
-    # parser.add_argument('--epochs', type = int, defualt = 100, help = 'Maximum number of epochs.')
-    # parser.add_argument('--model', )
-    # parser.add_argument('--scheme', )
-    # parser.add_argument()
-    train_dataset = BCI_Dataset()
-    print(train_dataset.data.size())
-    print(train_dataset.label.size())
-    # test_dataset = SI_dataset(train = False)
-    # tunning('A', train_dataset, test_dataset)
+    train_dataset = SI_dataset()
+    test_dataset = SI_dataset(train = False)
+    tunning('A', train_dataset, test_dataset)
 
     
+"""
+full self atten in paper + mul input
+{'Trial-ID': 46, 'Iteration': 148, 'activation': <class 'torch.nn.modules.activation.ELU'>, 'batch_size': 83, 'dense_size': 279, 'dropout': 0.491454253367649, 'filters': 32, 'kernel_size': 10, 'learning_rate': 0.013243591021436728, 'optimizer': <class 'torch.optim.adam.Adam'>, 'Objective': 0.4270833333333333}
+
+
+self atten (no mul w^T)
+{'Trial-ID': 79, 'Iteration': 61, 'activation': <class 'torch.nn.modules.activation.ELU'>, 'batch_size': 96, 'dense_size': 50, 'dropout': 0.4998838855278078, 'filters': 16, 'kernel_size': 25, 'learning_rate': 0.050870238623487864, 'optimizer': <class 'torch.optim.sgd.SGD'>, 'Objective': 0.4236111111111111}
+
+
+full self atten
+{'Trial-ID': 81, 'Iteration': 65, 'activation': <class 'torch.nn.modules.activation.ELU'>, 'batch_size': 58, 'dense_size': 176, 'dropout': 0.2952126353064908, 'filters': 32, 'kernel_size': 10, 'learning_rate': 0.08357707054864591, 'optimizer': <class 'torch.optim.sgd.SGD'>, 'Objective': 0.4583333333333333}
+
+
+
+"""

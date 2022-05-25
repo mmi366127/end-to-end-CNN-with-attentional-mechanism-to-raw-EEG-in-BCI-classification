@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def print_func(x):
-    if __name__ == '__main__' : print(x.size())
 
 class AttentionNet(nn.Module):
     def __init__(self, input_size = (64, 250), activate_func = nn.ELU, dropout = 0.5, kernel_size = 50, dense_size = 91, filter_number = 32):
@@ -73,17 +71,13 @@ class AttentionNet(nn.Module):
         # conv 1
         x = x.reshape((batchsize * self.C, 1, self.F0))
         x = self.conv1(x)
-        print_func(x)
         
         # conv 2
         x = self.conv2(x)
-        print_func(x)
         
         # maxpool 1
         x = self.maxpool1(x)
-        print_func(x)
         x = x.reshape((batchsize, self.C, self.F4))
-        print_func(x)
 
         # self attentation     
         q = self.Q(x)
@@ -95,12 +89,9 @@ class AttentionNet(nn.Module):
         w = self.dropout_attn(w)
         m = torch.bmm(w, v)
         
-        # m = self.tanh(torch.bmm(m, w.permute(0, 2, 1)))
-        # m = self.tanh(torch.bmm(m, x))
-        print_func(m)
+        m = self.tanh(torch.bmm(m, w.permute(0, 2, 1)))
         x = self.flatten(m)
-        print_func(x)
-        # x = torch.cat((x.reshape(batchsize, -1), m), dim = -1)
+        
         
         # hidden FC layers
         x = self.FC1(x)
@@ -296,13 +287,3 @@ class TSception(nn.Module):
         out = out.view(out.size()[0], -1)
         return out.size()
 
-
-
-
-if __name__ == '__main__':
-
-    Net = AttentionNet(filter_number = 16)
-
-    x = torch.randn(20, 64, 250)
-
-    Net.forward(x)
